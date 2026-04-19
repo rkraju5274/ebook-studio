@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ebook Studio - Premium Reading Experience</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0f172a',
+                        primary: '#6366f1',
+                        secondary: '#ec4899'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Three.js & FontAwesome -->
+    <script src="[https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js](https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js)"></script>
+    <link href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css)" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="glass sticky top-0 z-50 py-4 px-6 md:px-12 flex justify-between items-center">
+        <div class="flex items-center gap-2 cursor-pointer" onclick="navigate('home')">
+            <i class="fas fa-book-open text-primary text-2xl"></i>
+            <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Ebook Studio</span>
+        </div>
+        
+        <div class="hidden md:flex items-center gap-8 font-medium">
+            <button onclick="navigate('home')" class="hover:text-primary transition">Home</button>
+            <button onclick="navigate('books')" class="hover:text-primary transition">Books</button>
+            <button onclick="navigate('dashboard')" class="hover:text-primary transition" id="nav-dashboard-link" style="display: none;">Dashboard</button>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <button onclick="navigate('cart')" class="relative hover:text-primary transition p-2">
+                <i class="fas fa-shopping-cart text-xl"></i>
+                <span id="cart-count" class="absolute top-0 right-0 bg-secondary text-white text-xs rounded-full h-4 w-4 flex items-center justify-center hidden">0</span>
+            </button>
+            <button id="nav-login-btn" onclick="navigate('login')" class="bg-primary hover:bg-indigo-700 px-5 py-2 rounded-full transition font-semibold hidden md:block">Login</button>
+            <button id="nav-profile-btn" onclick="navigate('dashboard')" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-full transition border border-gray-600 hidden flex items-center gap-2">
+                <i class="fas fa-user-circle"></i> <span id="nav-username">Profile</span>
+            </button>
+            <button class="md:hidden text-2xl" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden glass absolute top-16 left-0 w-full flex flex-col p-4 gap-4 z-40 border-b border-gray-700">
+        <button onclick="navigate('home'); this.parentElement.classList.add('hidden')" class="text-left py-2 border-b border-gray-700">Home</button>
+        <button onclick="navigate('books'); this.parentElement.classList.add('hidden')" class="text-left py-2 border-b border-gray-700">Books</button>
+        <button onclick="navigate('dashboard'); this.parentElement.classList.add('hidden')" class="text-left py-2 border-b border-gray-700" id="mobile-dashboard-link" style="display: none;">Dashboard</button>
+        <button onclick="navigate('login'); this.parentElement.classList.add('hidden')" class="text-left py-2 text-primary font-bold" id="mobile-login-btn">Login</button>
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-grow relative">
+        <!-- Home View -->
+        <section id="view-home" class="view-section active pb-20">
+            <div id="hero-canvas"></div>
+            <div class="container mx-auto px-6 md:px-12 pt-20 pb-32 text-center relative z-10">
+                <h1 class="text-5xl md:text-7xl font-extrabold mb-6 leading-tight">
+                    Read Without <br> <span class="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Boundaries</span>
+                </h1>
+                <p class="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto">Access thousands of premium ebooks instantly.</p>
+                <div class="flex justify-center gap-4 flex-wrap">
+                    <button onclick="navigate('books')" class="bg-primary hover:bg-indigo-700 text-white px-8 py-3 rounded-full font-bold text-lg transition">Explore Books</button>
+                </div>
+            </div>
+            <!-- Featured Books -->
+            <div class="container mx-auto px-6 md:px-12 py-16">
+                <h2 class="text-3xl font-bold mb-8">Featured Ebooks</h2>
+                <div id="featured-books-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+            </div>
+        </section>
+
+        <!-- Books View -->
+        <section id="view-books" class="view-section py-12">
+            <div class="container mx-auto px-6 md:px-12">
+                <h2 class="text-4xl font-bold mb-8">Library</h2>
+                <div id="all-books-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8"></div>
+            </div>
+        </section>
+
+        <!-- Reader View -->
+        <section id="view-reader" class="view-section py-8">
+            <div class="container mx-auto px-4 md:px-12 h-full flex flex-col items-center">
+                <div class="w-full max-w-4xl flex justify-between items-center mb-6">
+                    <button onclick="navigate('books')" class="glass px-4 py-2 rounded-lg hover:bg-white/10 transition flex items-center gap-2">
+                        <i class="fas fa-arrow-left"></i> Back to Library
+                    </button>
+                    <h2 id="reader-title" class="text-xl font-bold truncate">Book Title</h2>
+                    <div></div>
+                </div>
+                <div class="w-full max-w-4xl glass rounded-xl relative overflow-hidden shadow-2xl bg-white/5" style="height: 70vh;">
+                    <div id="reader-content" class="absolute inset-0 p-8 md:p-12 overflow-y-auto font-serif text-lg leading-relaxed text-gray-200 hidden">
+                        <h1 id="reader-content-title" class="text-4xl mb-6 text-white font-sans font-bold">Chapter 1</h1>
+                        <div id="reader-text" class="space-y-6"></div>
+                    </div>
+                    <div id="reader-lock-screen" class="absolute inset-0 bg-gray-900/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20 hidden">
+                        <div class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mb-6">
+                            <i class="fas fa-lock text-4xl text-secondary"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2">Premium Content</h3>
+                        <p class="text-gray-400 max-w-md mb-8">This book is exclusive to our premium members.</p>
+                        <button onclick="addSubscriptionToCart()" class="bg-gradient-to-r from-primary to-secondary px-8 py-3 rounded-lg font-bold transition">Subscribe for ₹99</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Login View (Supabase Auth Ready) -->
+        <section id="view-login" class="view-section py-20">
+            <div class="container mx-auto px-4 flex justify-center">
+                <div class="glass w-full max-w-md rounded-2xl p-8 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary"></div>
+                    <div class="text-center mb-8">
+                        <i class="fas fa-book-open text-primary text-4xl mb-4"></i>
+                        <h2 class="text-3xl font-bold" id="auth-title">Welcome Back</h2>
+                        <p class="text-gray-400 mt-2" id="auth-subtitle">Sign in to access your library</p>
+                    </div>
+                    <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Email Address</label>
+                            <input type="email" id="auth-email" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 focus:outline-none focus:border-primary text-white" placeholder="you@example.com">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Password</label>
+                            <input type="password" id="auth-password" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 focus:outline-none focus:border-primary text-white" placeholder="••••••••">
+                        </div>
+                        <button type="submit" id="auth-submit" class="w-full bg-primary hover:bg-indigo-600 px-4 py-3 rounded-lg font-bold transition mt-6">
+                            Sign In / Sign Up
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dashboard View -->
+        <section id="view-dashboard" class="view-section py-12">
+            <div class="container mx-auto px-6 md:px-12 max-w-5xl">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+                    <div>
+                        <h2 class="text-3xl font-bold">My Dashboard</h2>
+                        <p class="text-gray-400">Welcome back, <span id="dash-username" class="text-white font-medium">User</span></p>
+                    </div>
+                    <button onclick="logout()" class="border border-red-500 text-red-400 hover:bg-red-500 hover:text-white px-4 py-2 rounded-lg transition text-sm font-semibold">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                    <div class="glass p-6 rounded-xl border border-gray-700 relative overflow-hidden">
+                        <h3 class="text-gray-400 text-sm font-bold uppercase tracking-wider mb-2">Account Status</h3>
+                        <div id="dash-sub-status"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer id="footer" class="bg-gray-900 border-t border-gray-800 pt-16 pb-8 mt-auto">
+        <div class="text-center text-gray-600 text-sm">
+            &copy; 2026 Ebook Studio. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast glass bg-gray-800/90 border-l-4 border-primary px-6 py-4 rounded shadow-2xl flex items-center gap-3">
+        <i class="fas fa-info-circle text-primary"></i>
+        <span id="toast-message" class="font-medium">Notification message</span>
+    </div>
+
+    <!-- Supabase CDN & Custom Scripts -->
+    <script src="[https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2](https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2)"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
