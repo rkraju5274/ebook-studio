@@ -1,53 +1,82 @@
 const booksDB = [
-    { id: 'b1', title: 'The Silent Observer', author: 'Elena Rust', category: 'Fiction', isPremium: false, cover: '[https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=400&q=80](https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=400&q=80)' },
-    { id: 'b2', title: 'Mastering JavaScript', author: 'Devin Code', category: 'Technology', isPremium: true, cover: '[https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=400&q=80](https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=400&q=80)' },
-    { id: 'b3', title: 'Startup Playbook', author: 'Sarah Ventures', category: 'Business', isPremium: true, cover: '[https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=400&q=80](https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=400&q=80)' }
+    { id: 'b1', title: 'The Silent Observer', author: 'Elena Rust', category: 'Fiction', cover: '[https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=400&q=80](https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=400&q=80)' },
+    { id: 'b2', title: 'Mastering JavaScript', author: 'Devin Code', category: 'Technology', cover: '[https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=400&q=80](https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=400&q=80)' },
+    { id: 'b3', title: 'Startup Playbook', author: 'Sarah Ventures', category: 'Business', cover: '[https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=400&q=80](https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=400&q=80)' },
+    { id: 'b4', title: 'Cosmic Journey', author: 'Dr. Alan Starlight', category: 'Science', cover: '[https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=400&q=80](https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=400&q=80)' }
 ];
 
 let appState = {
-    user: null, 
-    cart: [],
-    accessedBooks: []
+    user: null
 };
 
-// Check if user is already logged in via Supabase
 async function checkAuthSession() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-        appState.user = {
-            email: session.user.email,
-            id: session.user.id,
-            isSubscribed: false // Default (Can be fetched from Supabase Database)
-        };
+        appState.user = { email: session.user.email, id: session.user.id };
         updateUIState();
     }
 }
 
-// Navigation
-function navigate(viewId, params = null) {
+async function handleAuth(e) {
+    e.preventDefault();
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+        if (error.message.includes("Invalid login") || error.message.includes("credentials")) {
+             const { error: signUpError } = await supabase.auth.signUp({ email, password });
+             if (signUpError) {
+                 showToast(signUpError.message);
+                 return;
+             }
+             showToast("Account Created! You can now login.");
+        } else {
+             showToast(error.message);
+             return;
+        }
+    } else {
+        appState.user = { email: data.user.email, id: data.user.id };
+        updateUIState();
+        showToast("Successfully logged in!");
+        navigate('dashboard');
+    }
+}
+
+async function logout() {
+    await supabase.auth.signOut();
+    appState.user = null;
+    updateUIState();
+    showToast("Logged out successfully");
+    navigate('home');
+}
+
+function navigate(viewId) {
     document.querySelectorAll('.view-section').forEach(el => {
         el.classList.remove('active');
         setTimeout(() => el.style.display = 'none', 300);
     });
+    
     setTimeout(() => {
         const target = document.getElementById(`view-${viewId}`);
-        target.style.display = 'block';
-        setTimeout(() => target.classList.add('active'), 10);
-        window.scrollTo(0,0);
+        if(target) {
+            target.style.display = 'block';
+            setTimeout(() => target.classList.add('active'), 10);
+            window.scrollTo(0,0);
+        }
     }, 300);
 
-    if (viewId === 'books') renderBooks();
     if (viewId === 'dashboard') {
         if(!appState.user) {
             showToast('Please login to access dashboard');
             navigate('login');
             return;
         }
-        renderDashboard();
+        document.getElementById('dash-username').innerText = appState.user.email;
     }
 }
 
-// UI State Updater
 function updateUIState() {
     const loginBtn = document.getElementById('nav-login-btn');
     const profileBtn = document.getElementById('nav-profile-btn');
@@ -65,84 +94,25 @@ function updateUIState() {
     }
 }
 
-// Render Books
 function renderBooks() {
     const grid = document.getElementById('all-books-grid');
-    grid.innerHTML = booksDB.map(book => `
+    const featGrid = document.getElementById('featured-books-grid');
+    
+    const bookCardsHTML = booksDB.map(book => `
         <div class="glass rounded-xl overflow-hidden hover:-translate-y-2 transition duration-300">
             <img src="${book.cover}" alt="${book.title}" class="w-full h-64 object-cover">
             <div class="p-4">
                 <span class="text-primary text-xs font-bold uppercase">${book.category}</span>
                 <h3 class="text-xl font-bold text-white mt-1">${book.title}</h3>
+                <p class="text-sm text-gray-400 mt-1">${book.author}</p>
             </div>
         </div>
     `).join('');
+
+    if(grid) grid.innerHTML = bookCardsHTML;
+    if(featGrid) featGrid.innerHTML = bookCardsHTML;
 }
 
-function renderHomeFeatured() {
-    const grid = document.getElementById('featured-books-grid');
-    if(grid) {
-        grid.innerHTML = booksDB.map(book => `
-            <div class="glass rounded-xl overflow-hidden">
-                <img src="${book.cover}" alt="${book.title}" class="w-full h-64 object-cover">
-            </div>
-        `).join('');
-    }
-}
-
-// Supabase Authentication (Login/Signup)
-async function handleAuth(e) {
-    e.preventDefault();
-    const email = document.getElementById('auth-email').value;
-    const password = document.getElementById('auth-password').value;
-    
-    // Try to login first
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-    });
-
-    if (error) {
-        // If login fails, try signing up (Basic example)
-        if (error.message.includes("Invalid login")) {
-             const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                 email: email,
-                 password: password,
-             });
-             if (signUpError) {
-                 showToast(signUpError.message, "error");
-                 return;
-             }
-             showToast("Account Created! Please check email if confirmation is on.");
-        } else {
-             showToast(error.message, "error");
-             return;
-        }
-    } else {
-        appState.user = { email: data.user.email, id: data.user.id };
-        updateUIState();
-        showToast("Successfully logged in!");
-        navigate('dashboard');
-    }
-}
-
-// Logout
-async function logout() {
-    await supabase.auth.signOut();
-    appState.user = null;
-    updateUIState();
-    showToast("Logged out successfully");
-    navigate('home');
-}
-
-// Dashboard
-function renderDashboard() {
-    document.getElementById('dash-username').innerText = appState.user.email;
-    const statusDiv = document.getElementById('dash-sub-status');
-    statusDiv.innerHTML = `<span class="bg-gray-600 text-white px-3 py-1 rounded-full text-sm font-bold">Free Tier</span>`;
-}
-
-// Toast
 function showToast(message) {
     const toast = document.getElementById('toast');
     document.getElementById('toast-message').innerText = message;
@@ -150,9 +120,34 @@ function showToast(message) {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// Init
 window.addEventListener('DOMContentLoaded', () => {
-    checkAuthSession();
-    renderHomeFeatured();
     renderBooks();
+    checkAuthSession();
+    
+    const canvas = document.getElementById('hero-canvas');
+    if(canvas && window.THREE) {
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        canvas.appendChild(renderer.domElement);
+
+        const geometry = new THREE.BufferGeometry();
+        const particlesCount = 500;
+        const posArray = new Float32Array(particlesCount * 3);
+        for(let i = 0; i < particlesCount * 3; i++) posArray[i] = (Math.random() - 0.5) * 10;
+        geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        
+        const material = new THREE.PointsMaterial({ size: 0.015, color: 0x6366f1, transparent: true, opacity: 0.8 });
+        const particlesMesh = new THREE.Points(geometry, material);
+        scene.add(particlesMesh);
+        camera.position.z = 3;
+
+        const animate = () => {
+            requestAnimationFrame(animate);
+            particlesMesh.rotation.y += 0.001;
+            renderer.render(scene, camera);
+        };
+        animate();
+    }
 });
